@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Night Archives</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <!-- Вынесенные общие стили и скрипты -->
+    <link rel="stylesheet" href="style.css">
+    <script src="common.js"></script>
+    <script src="chat_config.js"></script>
+    
+    <style>
+        /* Чат анимации */
+        #main-content {
+            display: none;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+        .chat-message {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .typing-indicator span {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background-color: #94a3b8;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- Фон: Звезды и горизонт -->
+    <div class="stars-container" id="stars"></div>
+    <div class="horizon"></div>
+
+    <!-- Модалка с пасхалкой -->
+    <div id="easter-egg-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm">
+        <div class="glass-card p-8 max-w-sm text-center transform scale-95 transition-transform duration-300">
+            <i data-lucide="sparkles" class="w-12 h-12 text-yellow-300 mx-auto mb-4"></i>
+            <h2 class="text-2xl font-bold text-yellow-300 mb-4">Секретный уровень найден!</h2>
+            <p class="text-gray-200 mb-6">За такую внимательность тебе активирован уникальный промокод:<br><br>
+            <span class="text-xl font-bold text-white bg-indigo-900 px-4 py-2 rounded-lg inline-block">Любое желание(скрин создателю)</span></p>
+            <p class="text-sm text-gray-400 mb-6">Сделай скриншот и предъяви автору! ❤️</p>
+            <button onclick="closeEasterEgg()" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-full text-white font-medium transition-colors">Закрыть</button>
+        </div>
+    </div>
+
+    <!-- Контент -->
+    <div class="content-wrapper container mx-auto px-4 py-8 flex flex-col items-center min-h-screen">
+        
+        <!-- ЭКРАН 1: ВХОД -->
+        <div id="login-screen" class="flex flex-col items-center justify-center flex-grow w-full max-w-md">
+            <div class="glass-card p-8 w-full text-center">
+                <i data-lucide="moon" class="w-16 h-16 text-indigo-300 mx-auto mb-6"></i>
+                <h1 class="text-3xl font-bold mb-2 tracking-wide text-indigo-100">Night Archives</h1>
+                <p class="text-indigo-300 text-sm mb-8 opacity-80">маленький архив для Солнца</p>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Введите секретный пароль</label>
+                    <input type="password" id="password-input" class="w-full bg-gray-900 bg-opacity-50 border border-gray-600 rounded-lg px-4 py-3 text-center text-white focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 transition-colors" placeholder="****">
+                    <p id="login-error" class="text-red-400 text-sm mt-2 hidden">Неверный пароль, попробуй еще раз!</p>
+                </div>
+                <button onclick="checkPassword()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-6 rounded-lg shadow-lg transition-all transform hover:scale-105 active:scale-95">Войти</button>
+            </div>
+        </div>
+
+        <!-- ОСНОВНОЙ КОНТЕНТ (Скрыт до ввода пароля) -->
+        <div id="main-content" class="w-full max-w-4xl flex flex-col gap-8 pb-10 flex-grow justify-center">
+            
+            <!-- Шапка -->
+            <header class="text-center">
+                <div class="inline-flex items-center justify-center gap-3 mb-2">
+                    <i data-lucide="moon" class="w-8 h-8 text-indigo-300"></i>
+                    <h1 class="text-4xl font-bold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-indigo-200 to-blue-400">Night Archives</h1>
+                </div>
+                <p class="text-indigo-300 mb-4 opacity-80 italic">маленький архив для Солнца</p>
+                <div class="glass-card inline-block px-6 py-2">
+                    <p class="text-sm text-gray-300">Мы под одним небом уже: <span id="days-counter" class="font-bold text-indigo-300 text-lg">0</span> дней ❤️</p>
+                </div>
+            </header>
+
+            <!-- ЭКРАН 2: ЧАТ -->
+            <section id="chat-section" class="glass-card p-4 md:p-6 flex flex-col h-[500px]">
+                <div class="flex items-center gap-3 mb-4 pb-4 border-b border-gray-700">
+                    <div class="w-10 h-10 rounded-full bg-indigo-900 flex items-center justify-center">
+                        <i data-lucide="bot" class="text-indigo-300"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg">Дядя РомаСкрипт</h3>
+                        <p class="text-xs text-green-400">В сети</p>
+                    </div>
+                </div>
+
+                <div id="chat-messages" class="flex-grow overflow-y-auto pr-2 flex flex-col gap-4 mb-4">
+                    <!-- Сообщения будут добавляться сюда -->
+                </div>
+
+                <div id="chat-controls" class="flex flex-wrap gap-2 pt-4 border-t border-gray-700">
+                    <!-- Кнопки будут добавляться сюда -->
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Скрипты чата и логина -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (sessionStorage.getItem('isUnlocked') === 'true') {
+                const loginScreen = document.getElementById('login-screen');
+                const mainContent = document.getElementById('main-content');
+                loginScreen.style.display = 'none';
+                mainContent.style.display = 'flex';
+                mainContent.style.opacity = '1';
+                initChat(); 
+                
+                // Запуск фоновой музыки
+                if (typeof initBackgroundAudio === 'function') {
+                    initBackgroundAudio();
+                }
+            }
+        });
+
+        function checkPassword() {
+            const input = document.getElementById('password-input').value;
+            const errorMsg = document.getElementById('login-error');
+            
+            if (input === 'gelya_i_love_you_so_much2104') {
+                errorMsg.classList.add('hidden');
+                
+                sessionStorage.setItem('isUnlocked', 'true');
+                
+                // Запуск музыки при входе
+                if (typeof initBackgroundAudio === 'function') {
+                    initBackgroundAudio();
+                }
+                
+                if (typeof confetti === 'function') {
+                    confetti({
+                        particleCount: 100,
+                        spread: 70,
+                        origin: { y: 0.6 },
+                        colors: ['#818cf8', '#c7d2fe', '#ffffff']
+                    });
+                }
+
+                const loginScreen = document.getElementById('login-screen');
+                const mainContent = document.getElementById('main-content');
+                
+                loginScreen.style.transition = 'opacity 0.5s';
+                loginScreen.style.opacity = '0';
+                
+                setTimeout(() => {
+                    loginScreen.style.display = 'none';
+                    mainContent.style.display = 'flex';
+                    setTimeout(() => {
+                        mainContent.style.opacity = '1';
+                        initChat(); 
+                    }, 50);
+                }, 500);
+
+            } else {
+                errorMsg.classList.remove('hidden');
+                const inputEl = document.getElementById('password-input');
+                inputEl.animate([
+                    { transform: 'translateX(0)' },
+                    { transform: 'translateX(-10px)' },
+                    { transform: 'translateX(10px)' },
+                    { transform: 'translateX(-10px)' },
+                    { transform: 'translateX(0)' }
+                ], { duration: 400 });
+            }
+        }
+
+        document.getElementById('password-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') checkPassword();
+        });
+
+        // Логика Чата
+        const chatMessages = document.getElementById('chat-messages');
+        const chatControls = document.getElementById('chat-controls');
+
+        function appendMessage(text, isUser = false) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `chat-message flex ${isUser ? 'justify-end' : 'justify-start'} w-full`;
+            
+            const bubble = document.createElement('div');
+            bubble.className = `max-w-[85%] rounded-2xl px-4 py-2 ${isUser ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-gray-800 bg-opacity-70 text-gray-200 border border-gray-700 rounded-tl-none'}`;
+            bubble.innerHTML = text; 
+            
+            msgDiv.appendChild(bubble);
+            chatMessages.appendChild(msgDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showTyping() {
+            return new Promise(resolve => {
+                const msgDiv = document.createElement('div');
+                msgDiv.id = 'typing-indicator';
+                msgDiv.className = 'chat-message flex justify-start w-full';
+                
+                const bubble = document.createElement('div');
+                bubble.className = 'max-w-[85%] rounded-2xl px-4 py-3 bg-gray-800 bg-opacity-70 text-gray-200 border border-gray-700 rounded-tl-none typing-indicator';
+                bubble.innerHTML = '<span></span><span></span><span></span>';
+                
+                msgDiv.appendChild(bubble);
+                chatMessages.appendChild(msgDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                setTimeout(() => {
+                    msgDiv.remove();
+                    resolve();
+                }, 1500);
+            });
+        }
+
+        function renderButtons(buttons) {
+            chatControls.innerHTML = ''; 
+            
+            if (!buttons || buttons.length === 0) return;
+
+            buttons.forEach(btn => {
+                const buttonEl = document.createElement('button');
+                buttonEl.className = 'px-4 py-2 bg-indigo-900 hover:bg-indigo-800 border border-indigo-700 rounded-full text-sm text-indigo-100 transition-colors shadow-sm';
+                buttonEl.textContent = btn.text;
+                
+                buttonEl.onclick = async () => {
+                    // Переход на другие страницы
+                    if (btn.id === 'nav_postcards') {
+                        window.location.href = 'postcards.html';
+                        return;
+                    }
+                    if (btn.id === 'nav_gallery') {
+                        window.location.href = 'gallery.html';
+                        return;
+                    }
+                    if (btn.id === 'nav_letter') {
+                        window.location.href = 'letter.html';
+                        return;
+                    }
+                    if (btn.id === 'open_chat') {
+                        window.open('https://t.me/Fluffy_KFC?text=Я%20заставила%20сайт%20дать%20мне%20лично%20тебя', '_blank');
+                        return;
+                    }
+                    if (btn.id === 'open_rickroll') {
+                        window.open('https://www.youtube.com/watch?v=dQw4w9WgXcQ', '_blank');
+                        return;
+                    }
+
+                    // Обычная логика
+                    appendMessage(btn.text, true); 
+                    chatControls.innerHTML = ''; 
+                    
+                    await showTyping();
+                    
+                    if (btn.id === 'btn_back') {
+                        appendMessage("Выбирай другой вопрос:", false);
+                        renderButtons(chatConfig.initialButtons);
+                        return;
+                    }
+                    
+                    const response = chatConfig.responses[btn.id];
+                    if (response) {
+                        appendMessage(response.text, false);
+                        renderButtons(response.buttons);
+                    } else {
+                        appendMessage("Ой, на эту кнопку у меня не прописан ответ!", false);
+                        renderButtons(chatConfig.initialButtons);
+                    }
+                };
+                
+                chatControls.appendChild(buttonEl);
+            });
+        }
+
+        function initChat() {
+            if (typeof chatConfig === 'undefined') {
+                appendMessage("Ошибка загрузки файла chat_config.js!", false);
+                return;
+            }
+            appendMessage(chatConfig.startMessage, false);
+            renderButtons(chatConfig.initialButtons);
+        }
+    </script>
+</body>
+</html>

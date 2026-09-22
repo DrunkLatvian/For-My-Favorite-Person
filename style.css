@@ -1,0 +1,114 @@
+/* Базовые стили и фон */
+body {
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(180deg, #020617 0%, #0b1329 50%, #1e1b4b 100%);
+    color: #e2e8f0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+}
+
+/* Звёздное небо */
+.stars-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.star {
+    position: absolute;
+    background-color: white;
+    border-radius: 50%;
+    animation: twinkle var(--duration) infinite ease-in-out alternate;
+}
+
+@keyframes twinkle {
+    0% { opacity: 0.2; transform: scale(0.8); }
+    100% { opacity: 1; transform: scale(1.2); }
+}
+
+/* Секретная звезда */
+.secret-star {
+    pointer-events: auto;
+    cursor: pointer;
+    box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.8);
+    animation: pulse-star 2s infinite ease-in-out alternate !important;
+    z-index: 50;
+}
+
+@keyframes pulse-star {
+    0% { opacity: 0.5; transform: scale(1); box-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
+    100% { opacity: 1; transform: scale(1.5); box-shadow: 0 0 15px rgba(255, 255, 255, 1); }
+}
+
+/* Силуэт леса/горизонта */
+.horizon {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 15vh;
+    background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1200 120" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"><path d="M0,120 L0,80 Q100,20 200,60 T400,90 T600,40 T800,80 T1000,30 L1200,70 L1200,120 Z" fill="%23020617" opacity="0.8"/></svg>') no-repeat bottom center;
+    background-size: cover;
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* Глассморфизм карточки */
+.glass-card {
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+    border-radius: 1rem;
+}
+
+/* Контент */
+.content-wrapper {
+    position: relative;
+    z-index: 10;
+}
+
+/* Кастомный аудиоплеер */
+.audio-player {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 50px;
+    margin-bottom: 15px;
+}
+.play-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #6366f1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.play-btn:hover { background: #4f46e5; }
+.progress-container {
+    flex-grow: 1;
+    height: 6px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 3px;
+    cursor: pointer;
+    position: relative;
+}
+.progress-bar {
+    height: 100%;
+    background: #818cf8;
+    border-radius: 3px;
+    width: 0%;
+}
