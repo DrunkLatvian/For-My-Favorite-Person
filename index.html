@@ -137,11 +137,21 @@
             }
         });
 
-        function checkPassword() {
+        // SHA-256 хеш пароля (сам пароль в коде не хранится)
+        const PASSWORD_HASH = 'f16c07efc974dfdd95bb2c265729e1d26da62c32d37fbb2452fd57e77fca8640';
+
+        async function hashString(str) {
+            const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+            return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function checkPassword() {
             const input = document.getElementById('password-input').value;
             const errorMsg = document.getElementById('login-error');
-            
-            if (input === 'gelya_i_love_you_so_much2104') {
+
+            const inputHash = await hashString(input);
+
+            if (inputHash === PASSWORD_HASH) {
                 errorMsg.classList.add('hidden');
                 
                 sessionStorage.setItem('isUnlocked', 'true');
@@ -189,7 +199,7 @@
         }
 
         document.getElementById('password-input').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') checkPassword();
+            if (e.key === 'Enter') checkPassword(); // async, но вызывать можно без await
         });
 
         // Логика Чата
